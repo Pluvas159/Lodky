@@ -15,6 +15,7 @@ class Server():							#server start
 		self.server = socket.socket(self.inet, self.stream)
 		self.server.bind(SERVER_ADRESS)
 		self.clients = []
+		self.players = 0
 
 	def start(self):
 		print('Awaiting user')
@@ -50,9 +51,11 @@ class Client():								#handles every client
 		self.socket.close()
 		print('Client disconnected at',self.adress)
 		self.server.clients.remove(self)
+		self.server.players -= 1 
 
 	def handle(self):
 		self.turn = self.server.clients.index(self)
+		self.server.players += 1
 		while True:
 			try:
 				pos = [-1,-1]
@@ -68,11 +71,13 @@ class Client():								#handles every client
 					if i != self:
 						pos = i.pos
 
+
 				if msg=='Disconnect':
 					print(msg)
 					self.close_cnt()
 					break
-				self.send_msg(f'{self.turn} {pos}')
+
+				self.send_msg(f'{self.turn} {pos} {self.server.players}')
 			except Exception as e:
 				print(e)
 				self.close_cnt()

@@ -18,6 +18,9 @@ font = pg.font.SysFont(all_fonts[0], 50, False)
 lodka = pg.image.load('img\\boat.png')
 bg = pg.image.load('img\\bg.jpg')
 bg = pg.transform.scale(bg,(W,H))
+bg1 = pg.transform.scale(pg.image.load('img\\bg1.jpg'),(W,H))
+bg2 = pg.transform.scale(pg.image.load('img\\bg2.jpg'),(W,H))
+
 colors = [(41,40,40),(0,0,0),(255,255,255)]
 
 
@@ -36,6 +39,20 @@ class Board():
 		self.bs = []
 		self.tiles = []
 		self.rada = 0
+		self.end = False
+		self.name = ''
+		self.namepicked = False
+
+	def change_name(self, key):
+		if key == pg.K_BACKSPACE:
+			self.name = self.name[:-1]
+		elif key in (13, 271):
+			self.namepicked = True
+		elif key != None:
+			self.name += chr(key)
+
+
+
 
 	def draw_numerals(self):
 		x = 20
@@ -55,34 +72,33 @@ class Board():
 		if not self.player:
 			self.x = 1336-570
 		y = 20
-		self.draw_numerals()
+
+		if not self.end:
+			if not self.done:
+				self.tiles = []
+				for i in range(10):
+					for j in range(10):
+						self.tiles.append(Tile(self.x, y, j, i, self.win))
+				self.done = True
+				for i in range(4):
+					self.bs.append(b(self.win, self.mouse, self, 100*i ))
 
 
-		if not self.done:
-			self.tiles = []
-			for i in range(10):
-				for j in range(10):
-					self.tiles.append(Tile(self.x, y, j, i, self.win))
-			self.done = True
-			for i in range(4):
-				self.bs.append(b(self.win, self.mouse, self, 100*i ))
-
-
-		if self.boats or not self.player:                         	##refreshes all of first board
-			for tile in self.tiles:
-				if tile.color == (255,0,0) or tile.color == (10,255,255):
-					tile.color = colors[0]
-				if self.mouse.clicked:
-					if tile.rect.collidepoint(mouse.pos):
-						tile.color = (10,255,255)
-						self.mouse.clicked = False
-				for boat in self.lode:
-					if tile.a == boat.a and tile.b == boat.b:
-						if tile.color !=(254,0,0):
-							tile.color = (152,152,152)
-				tile.draw()
-		else:
-			self.get_boats()				##Initializes new boats
+			if self.boats or not self.player:                         	##refreshes all of first board
+				for tile in self.tiles:
+					if tile.color == (255,0,0) or tile.color == (10,255,255):
+						tile.color = colors[0]
+					if self.mouse.clicked and self.player:
+						if tile.rect.collidepoint(mouse.pos):
+							tile.color = (10,255,255)
+							self.mouse.clicked = False
+					for boat in self.lode:
+						if tile.a == boat.a and tile.b == boat.b:
+							if tile.color !=(254,0,0):
+								tile.color = (152,152,152)
+					tile.draw()
+			else:
+				self.get_boats()				##Initializes new boats
 
 
 	def get_boats(self):
@@ -106,6 +122,7 @@ class Board():
 				tile.draw()
 			for b in self.bs:
 				b.draw()
+				pass
 		else:
 			self.boats = True
 
@@ -114,13 +131,15 @@ class Board():
 		if cnt.player2:
 			if self.rada ==0:
 						draw_text('Si na rade', W/2-75, 600,(0,0,0),40)
-						draw_text(f'Uhadnute: {cnt.uhadnute}/8', W/2-600, 570, (0,0,0), 30)
-						draw_text(f'Uhadnute: {cnt.porazene}/8', W/2+400, 570, (0,0,0), 30)
 
 			else:
 						draw_text('Opponent je na rade', W/2-125, 600,(0,0,0),40)
-						draw_text(f'Uhadnute: {cnt.uhadnute}/8', W/2-600, 570, (0,0,0), 30)
-						draw_text(f'Uhadnute: {cnt.porazene}/8', W/2+400, 570, (0,0,0), 30)
+			draw_text(f'Uhadnute: {cnt.uhadnute}/8', W/2-600, 570, (0,0,0), 30)
+			draw_text(f'Uhadnute: {cnt.porazene}/8', W/2+400, 570, (0,0,0), 30)
+			draw_text('Tvoje meno:',10,650,(0,0,0),30)
+			draw_text('Súperove meno:',1060,650,(0,0,0),30)
+			draw_text(self.name,30,700,(0,0,0),30)
+			draw_text(cnt.brd2.name,1100,700,(0,0,0),30)
 
 
 
@@ -152,6 +171,7 @@ class Menu():
 		self.play = False
 		self.mouse = mouse
 		self.inmenu = True
+		self.namepick = False
 
 	def add(self, a, text):
 		self.menu_text = []
@@ -168,7 +188,7 @@ class Menu():
 				if v:
 					self.inmenu=False
 					if self.menu_text.index(i)==0:
-						self.play = True
+						self.namepick = True
 
 class Boat():
 	def __init__(self, a, b, x, y, lod):
@@ -265,6 +285,8 @@ class Connection():
 		self.porazene = 0
 		self.thread = False
 		self.player2 = False
+		self.end = False
+		self.opp_disconnect = False
 
 	def connect(self):
 		if not self.thread:
@@ -278,7 +300,7 @@ class Connection():
 			if not self.connected:
 				try:
 					self.client.connect(self.adress)
-					self.lode_pos = []
+					self.lode_pos = [[self.brd1.name]]
 					for lod in self.brd1.lode:
 						self.lode_pos.append([lod.a,lod.b])
 					self.send_msg(self.lode_pos)
@@ -326,9 +348,13 @@ class Connection():
 				self.player2 = True
 				brd2.draw_board()
 				for i in player2:
-					for tile in brd2.tiles:
-						if tile.a == int(i[2]) and tile.b == int(i[5]):
-							tile.lod = True
+					if i != player2[0]:
+						for tile in brd2.tiles:
+							if tile.a == int(i[2]) and tile.b == int(i[5]):
+								tile.lod = True
+					else:
+						self.brd2.name = i.replace('[','').replace("'",'')
+
 
 		else:
 			if not self.disconnect:
@@ -348,6 +374,8 @@ class Connection():
 									if tile.lod:
 										tile.color = (10,255,255)
 										self.uhadnute +=1
+										if self.uhadnute >=8:
+											self.end = True
 									else:
 										tile.color = (152,152,152)
 									self.send_msg([tile.a,tile.b])
@@ -356,6 +384,8 @@ class Connection():
 
 				else:
 					self.brd1.rada = 1 
+				if msg[3]=="1":
+					self.opp_disconnect = True
 
 
 
@@ -364,16 +394,20 @@ class Connection():
 	def draw_opp(self, msg):
 		try:
 			for tile in self.brd1.tiles:
-				if tile.a == int(msg[1].replace('[','').replace(',','')) and tile.b == int(msg[2].replace(']','')):
-					if tile.lod:
-						if tile.color != (254,0,0):
-							tile.color = (254,0,0)
-							self.porazene += 1
-					else:
-						tile.color = (0,255,0)
-					tile.draw()
-					for lod in self.brd1.lode:
-						lod.draw()
+					if tile.a == int(msg[1].replace('[','').replace(',','')) and tile.b == int(msg[2].replace(']','')):
+						if tile.lod:
+							if tile.color != (254,0,0):
+								tile.color = (254,0,0)
+								self.porazene += 1
+								if self.porazene >=8:
+									self.end = True
+						else:
+							tile.color = (0,255,0)
+						if not self.end:
+							tile.draw()
+			if not self.end:
+				for lod in self.brd1.lode:
+							lod.draw()
 		except:
 			pass
 
@@ -419,11 +453,23 @@ if __name__ == '__main__':
 	cnt = Connection(brd, brd2, mouse)
 	while True:
 	    pg.display.update()
-	    WIN.blit(bg,(0,0))
+	    if men.inmenu or men.namepick:
+	    	WIN.blit(bg,(0,0))
+	    elif men.play and not cnt.player2:
+	    	WIN.blit(bg1,(0,0))
+	    elif cnt.player2:
+	    	WIN.blit(bg2,(0,0))
+
 	    mouse.check_click()
 	    if men.inmenu:
 	    	men.add(1,'Play')
 	    	men.check_collision()
+	    if men.namepick:
+	    	men.add(1,'Zadaj meno')
+	    	men.add(2,brd.name)
+	    	if brd.namepicked:
+	    		men.namepick = False
+	    		men.play = True
 	    if men.play:
 	    	cnt.draw_status()
 	    	if cnt.porazene<8 and cnt.uhadnute<8:
@@ -433,11 +479,13 @@ if __name__ == '__main__':
 		    		for tile in brd2.tiles:
 		    			tile.draw()
 		    		brd.draw_rada(cnt)
-		    		if cnt.player2:
-		    			brd2.draw_numerals()
 		    		if brd.boats:
 		    			for lod in brd.lode:
-		    				lod.draw()
+		    				if not cnt.end:
+		    					lod.draw()
+		    		if cnt.end:
+		    			brd.end = True
+
 	    	elif cnt.uhadnute>=8:
 	    			WIN.blit(bg,(0,0))
 		    		men.add(1,'Vyhral si')
@@ -452,4 +500,13 @@ if __name__ == '__main__':
 	            break
 	        elif event.type == pg.MOUSEBUTTONDOWN:
 	        	mouse.mousedown = True
-	    clock.tick(30)
+	        if event.type == pg.KEYDOWN:
+	        	brd.change_name(event.key)
+	    if cnt.opp_disconnect:
+	    	WIN.blit(bg,(0,0))
+	    	men.add(1,'Opponent disconnected')
+	    	men.add(2,'closing the game')
+	    	pg.display.update()
+	    	time.sleep(3)
+	    	break
+	    clock.tick(60)
