@@ -8,6 +8,7 @@ pg.init()
 
 W = 1336
 H = 768
+ships = 18
 
 
 WIN = pg.display.set_mode((W, H))
@@ -16,6 +17,8 @@ clock = pg.time.Clock()
 all_fonts = pg.font.get_fonts()
 font = pg.font.SysFont(all_fonts[0], 50, False)
 lodka = pg.image.load('img\\boat.png')
+lodka3 = pg.transform.rotate(pg.transform.scale(pg.image.load('img\\boat3.png'),(150,45)),90)
+lodka4 = pg.transform.scale(pg.image.load('img\\boat4.png'),(215,45))
 bg = pg.image.load('img\\bg.jpg')
 bg = pg.transform.scale(bg,(W,H))
 bg1 = pg.transform.scale(pg.image.load('img\\bg1.jpg'),(W,H))
@@ -42,6 +45,8 @@ class Board():
 		self.end = False
 		self.name = ''
 		self.namepicked = False
+		self.rect = pg.Rect((0,0,570,570))
+
 
 	def change_name(self, key):
 		if key == pg.K_BACKSPACE:
@@ -82,6 +87,10 @@ class Board():
 				self.done = True
 				for i in range(4):
 					self.bs.append(b(self.win, self.mouse, self, 100*i ))
+				self.bs.append(b(self.win, self.mouse, self, 550, 2))
+				self.bs.append(b(self.win, self.mouse, self, 500, 2))
+				self.bs.append(b(self.win, self.mouse, self, 200, 3))
+
 
 
 			if self.boats or not self.player:                         	##refreshes all of first board
@@ -102,12 +111,12 @@ class Board():
 
 
 	def get_boats(self):
-		draw_text(f'Zadaj lode {len(self.lode)}/8',800,200,(255,255,255))
-		rect = draw_get_rect(f'Zadaj lode {len(self.lode)}/8',800,200,(255,255,255))
+		draw_text(f'Zadaj lode {len(self.lode)}/{ships}',800,200,(255,255,255))
+		rect = draw_get_rect(f'Zadaj lode {len(self.lode)}/{ships}',800,200,(255,255,255))
 		pg.draw.rect(self.win,colors[0],rect)
-		draw_text(f'Zadaj lode {len(self.lode)}/8',800,200,(255,255,255))
+		draw_text(f'Zadaj lode {len(self.lode)}/{ships}',800,200,(255,255,255))
 	
-		if len(self.lode)<8:
+		if len(self.lode)<ships:
 			for tile in self.tiles:
 				# if self.mouse.clicked:
 				# 	if tile.rect.collidepoint(mouse.pos):
@@ -134,8 +143,8 @@ class Board():
 
 			else:
 						draw_text('Opponent je na rade', W/2-125, 600,(0,0,0),40)
-			draw_text(f'Uhadnute: {cnt.uhadnute}/8', W/2-600, 570, (0,0,0), 30)
-			draw_text(f'Uhadnute: {cnt.porazene}/8', W/2+400, 570, (0,0,0), 30)
+			draw_text(f'Uhadnute: {cnt.uhadnute}/{ships}', W/2-600, 570, (0,0,0), 30)
+			draw_text(f'Uhadnute: {cnt.porazene}/{ships}', W/2+400, 570, (0,0,0), 30)
 			draw_text('Tvoje meno:',10,650,(0,0,0),30)
 			draw_text('Súperove meno:',1060,650,(0,0,0),30)
 			draw_text(self.name,30,700,(0,0,0),30)
@@ -191,28 +200,46 @@ class Menu():
 						self.namepick = True
 
 class Boat():
-	def __init__(self, a, b, x, y, lod):
+	def __init__(self, a, b, x, y, poradie, typ = 1):
 		self.a = a
 		self.b = b
 		self.win = WIN
 		self.x = x
 		self.y = y
 		self.lod = pg.transform.scale(lodka,(100,40))
+		self.lod3 = lodka3
+		self.lod4 = lodka4
 		self.win = WIN
-		self.poradie = lod
+		self.poradie = poradie
+		self.type = typ
+
 
 	def draw(self):
 		if self.poradie == 1:
-			self.win.blit(self.lod,(self.x,self.y))
+			if self.type == 1:
+				self.rect = pg.Rect(self.win.blit(self.lod,(self.x,self.y)))
+			elif self.type == 2:
+				self.rect = pg.Rect(self.win.blit(self.lod3,(self.x, self.y)))
+			elif self.type == 3:
+				self.rect = pg.Rect(self.win.blit(self.lod4,(self.x, self.y)))
 
 class b():
-	def __init__(self, win, mouse, board, offset):
+	def __init__(self, win, mouse, board, offset, typ = 1):
 		self.win = win
 		self.mouse = mouse
-		self.lod = lodka
-		self.lod = pg.transform.scale(self.lod,(100,40))
+		self.type = typ
+		if typ==1:
+			self.lod = pg.transform.scale(lodka,(100,40))
+		elif typ==2:
+			self.lod = lodka3
+		elif typ==3:
+			self.lod = lodka4
+
 		self.clicked = False
-		self.pos = (50+offset,600)
+		if typ==1 or typ==2:
+			self.pos = (50+offset,600)
+		else:
+			self.pos = (50+offset,700)
 		self.board = board
 		self.last_tiles = []
 		self.done = False
@@ -221,49 +248,74 @@ class b():
 			for tile in self.last_tiles:
 				tile.color = colors[0]
 			self.last_tiles = []
-			b = self.win.blit(self.lod,self.pos)
+			self.b = self.win.blit(self.lod,self.pos)
 			if not self.done:
 				if self.mouse.mousedown:
 					if self.clicked:
 						self.clicked = not self.clicked
-					elif b.collidepoint(self.mouse.pos):
+					elif self.b.collidepoint(self.mouse.pos):
 							self.clicked = True
 							self.mouse.mousedown = False
 				if self.clicked:
 						pos = self.mouse.get_p()
-						self.pos = (pos[0]-50,pos[1]-20)
+						if self.type==1:
+							self.pos = (pos[0]-50,pos[1]-20)
+						elif self.type==2:
+							self.pos = (pos[0]-20,pos[1]-50)
+						elif self.type == 3:
+							self.pos = (pos[0]-100,pos[1]-20)
 						for tile in self.board.tiles:
-							if tile.rect.collidepoint(self.pos):
+							if tile.rect.colliderect(pg.Rect((self.pos[0],self.pos[1],10,10))):
 								self.pos = (tile.rect.x,tile.rect.y)
 								if tile.color == colors[0]:
 									tile.color = (0,255,0)
 									self.last_tiles.append(tile)
 								for i in self.board.tiles:
-									if i.a == tile.a+1 and i.b ==tile.b:
-										if i.color == colors[0]:
-											i.color = (0,255,0)
-											self.last_tiles.append(i)			
+									if self.type==1 or self.type==3:
+										if i.a == tile.a+1 and i.b ==tile.b:
+											if i.color == colors[0]:
+													i.color = (0,255,0)
+													self.last_tiles.append(i)
+										if self.type==3:
+											if (i.a == tile.a+2 or i.a == tile.a+3) and i.b == tile.b:
+												i.color = (0,255,0)
+												self.last_tiles.append(i)
+									elif self.type==2:
+										if i.a == tile.a and (i.b == tile.b+1 or i.b == tile.b+2):
+											if i.color == colors[0]:
+													i.color = (0,255,0)
+													self.last_tiles.append(i)
+
 								break
+
 
 
 
 				else:
 					self.poradie = 1
-					for tile in self.board.tiles:
-						if tile.rect.colliderect(b):
-							je = False
-							for boat in self.board.lode:
-								if boat.a == tile.a and boat.b == tile.b:
-									je = True
-							if not je:
-								if self.poradie ==1:
-									self.board.lode.append(Boat(tile.a,tile.b,tile.rect.x,tile.rect.y, self.poradie))
-									self.poradie = 0
-								else:
-									self.board.lode.append(Boat(tile.a,tile.b,tile.rect.x,tile.rect.y, self.poradie))
-								tile.color = (255,0,0)
-								tile.lod = True
-								self.done = True
+					je = False
+					for boat in self.board.bs:
+							if boat!=self:
+								try:
+									if boat.b.colliderect(self.b):
+										je = True
+								except:
+									pass
+					if not je:
+									for tile in self.board.tiles:
+										if tile.rect.colliderect(self.b):
+											if self.poradie ==1:
+												self.board.lode.append(Boat(tile.a,tile.b,tile.rect.x,tile.rect.y, self.poradie, self.type))
+												self.poradie = 0
+											else:
+												self.board.lode.append(Boat(tile.a,tile.b,tile.rect.x,tile.rect.y, self.poradie, self.type))
+											tile.color = (255,0,0)
+											tile.lod = True
+											self.done = True
+
+
+
+
 
 
 
@@ -374,7 +426,7 @@ class Connection():
 									if tile.lod:
 										tile.color = (10,255,255)
 										self.uhadnute +=1
-										if self.uhadnute >=8:
+										if self.uhadnute >=ships:
 											self.end = True
 									else:
 										tile.color = (152,152,152)
@@ -399,7 +451,7 @@ class Connection():
 							if tile.color != (254,0,0):
 								tile.color = (254,0,0)
 								self.porazene += 1
-								if self.porazene >=8:
+								if self.porazene >=ships:
 									self.end = True
 						else:
 							tile.color = (0,255,0)
@@ -472,7 +524,7 @@ if __name__ == '__main__':
 	    		men.play = True
 	    if men.play:
 	    	cnt.draw_status()
-	    	if cnt.porazene<8 and cnt.uhadnute<8:
+	    	if cnt.porazene<ships and cnt.uhadnute<ships:
 		    	brd.draw_board()
 		    	if brd.boats == True:
 		    		cnt.connect()
@@ -486,7 +538,7 @@ if __name__ == '__main__':
 		    		if cnt.end:
 		    			brd.end = True
 
-	    	elif cnt.uhadnute>=8:
+	    	elif cnt.uhadnute>=ships:
 	    			WIN.blit(bg,(0,0))
 		    		men.add(1,'Vyhral si')
 	    	else:
