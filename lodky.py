@@ -163,7 +163,7 @@ class Mouse():
 
 
 	def check_click(self):
-		self.mouse = pg.mouse.get_pressed(1)
+		self.mouse = pg.mouse.get_pressed(3)
 		if self.mouse[0]:
 			self.pos = pg.mouse.get_pos()
 			self.clicked = True

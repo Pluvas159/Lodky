@@ -64,7 +64,7 @@ class Client():								#handles every client
 					self.pos = msg
 					self.turn = 1
 					for i in self.server.clients:
-						if i !=self:
+						if i != self:
 							i.turn = 0
 							pos = i.pos
 				for i in self.server.clients:
