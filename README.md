@@ -7,3 +7,5 @@ Multiplayer "lodky" game with Socket server made in pygame.
 
     python lodky.py
 
+## Server
+    python server.py
